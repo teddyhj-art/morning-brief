@@ -2,6 +2,8 @@
 // index.html은 /api/claude 를 부르므로 파일 경로와 이름은 그대로 두세요.
 // 응답 형식도 기존과 똑같이 { content: [{ type:"text", text:"..." }] } 로 맞춰뒀습니다.
 
+export const config = { maxDuration: 60 };
+
 const MODEL = "gemini-2.5-flash";
 
 // 요청 종류별 출력 상한. 검색 결과를 읽고 정리해야 하므로 넉넉하게 둡니다.
