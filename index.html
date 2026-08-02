@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>아침 브리핑</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EDEFF2;
+    --card:#F7F8FA;
+    --ink:#1B2A41;
+    --ink-soft:#5A6577;
+    --ink-faint:#9AA3B1;
+    --rule:#D8DCE3;
+    --dawn:#E8A33D;
+    --sea:#2E7D74;
+    --plum:#7B5A8F;
+    --sky:#3A6EA5;
+    --rise:#C2412D;
+    --fall:#2B5FA8;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"IBM Plex Sans KR",-apple-system,"Segoe UI",sans-serif;
+    font-weight:300;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1120px;margin:0 auto;padding:0 22px 80px;}
+
+  /* ---- sunrise line: doubles as the loading indicator ---- */
+  .horizon{position:sticky;top:0;z-index:40;height:3px;background:var(--rule);}
+  .horizon span{
+    display:block;height:100%;width:0;
+    background:linear-gradient(90deg,var(--ink) 0%,var(--plum) 35%,var(--dawn) 100%);
+    transition:width .6s ease;
+  }
+  .horizon.on span{width:100%;transition:width 14s cubic-bezier(.1,.7,.2,1);}
+  .horizon.done span{width:100%;transition:width .3s ease;opacity:.35;}
+
+  /* ---- masthead ---- */
+  header{padding:38px 0 24px;}
+  .eyebrow{
+    font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--ink-faint);font-weight:500;margin:0 0 12px;
+  }
+  h1{
+    font-family:"Gowun Batang",Georgia,serif;font-weight:700;
+    font-size:clamp(30px,6vw,46px);line-height:1.18;margin:0 0 10px;
+    letter-spacing:-.01em;
+  }
+  .standfirst{margin:0;font-size:14.5px;color:var(--ink-soft);max-width:46ch;line-height:1.65;}
+
+  /* ---- controls ---- */
+  .controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:26px 0 8px;}
+  .chip{
+    font-family:inherit;font-size:12.5px;font-weight:400;
+    padding:7px 13px;border-radius:999px;cursor:pointer;
+    border:1px solid var(--rule);background:transparent;color:var(--ink-soft);
+    transition:background .15s,color .15s,border-color .15s;
+  }
+  .chip:hover{border-color:var(--ink-faint);}
+  .chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#F7F8FA;font-weight:500;}
+  .chip:focus-visible,.load:focus-visible,.item:focus-visible,.back:focus-visible{
+    outline:2px solid var(--dawn);outline-offset:2px;
+  }
+  .load{
+    font-family:inherit;font-size:12.5px;font-weight:500;letter-spacing:.02em;
+    padding:8px 16px;border-radius:999px;cursor:pointer;margin-left:auto;
+    border:1px solid var(--dawn);background:var(--dawn);color:#231A08;
+    transition:opacity .15s;
+  }
+  .load:hover{opacity:.86;}
+  .load[disabled]{opacity:.45;cursor:default;}
+  .stamp{font-size:11.5px;color:var(--ink-faint);margin:2px 0 0;letter-spacing:.02em;}
+
+  /* ---- market strip ---- */
+  .market{
+    display:flex;flex-wrap:wrap;gap:0;margin-top:22px;
+    border-top:1px solid var(--ink);border-bottom:1px solid var(--rule);
+  }
+  .tick{flex:1 1 132px;padding:13px 16px 13px 0;min-width:0;}
+  .tick .nm{font-size:10.5px;letter-spacing:.12em;color:var(--ink-faint);font-weight:500;margin-bottom:5px;}
+  .tick .px{font-family:"Gowun Batang",Georgia,serif;font-weight:700;font-size:19px;line-height:1.1;}
+  .tick .ch{font-size:12px;margin-top:4px;font-weight:400;}
+  .tick.up .ch{color:var(--rise);}
+  .tick.down .ch{color:var(--fall);}
+  .tick.flat .ch{color:var(--ink-faint);}
+  .market.pending .tick .px{color:var(--ink-faint);}
+
+  /* ---- two-pane ---- */
+  .panes{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.08fr);gap:38px;margin-top:26px;align-items:start;}
+
+  /* ---- issue list ---- */
+  .list{list-style:none;margin:0;padding:0;}
+  .item{
+    display:block;width:100%;text-align:left;cursor:pointer;
+    background:transparent;border:0;border-top:1px solid var(--rule);
+    padding:18px 4px 18px 20px;position:relative;font-family:inherit;
+    transition:background .15s;
+  }
+  .list li:last-child .item{border-bottom:1px solid var(--rule);}
+  .item:hover{background:var(--card);}
+  .item[aria-current="true"]{background:var(--card);}
+  .item::before{
+    content:"";position:absolute;left:2px;top:24px;
+    width:7px;height:7px;border-radius:50%;background:var(--dot,var(--ink-faint));
+  }
+  .item[aria-current="true"]::after{
+    content:"";position:absolute;left:5.5px;top:31px;bottom:18px;width:1px;background:var(--dot,var(--ink-faint));opacity:.4;
+  }
+  .kicker{font-size:10.5px;letter-spacing:.14em;font-weight:500;color:var(--dot,var(--ink-faint));margin-bottom:6px;}
+  .item h2{
+    font-family:"Gowun Batang",Georgia,serif;font-weight:700;
+    font-size:17.5px;line-height:1.45;margin:0 0 6px;color:var(--ink);
+  }
+  .item p{margin:0;font-size:13.5px;line-height:1.62;color:var(--ink-soft);}
+
+  /* ---- reader ---- */
+  .reader{position:sticky;top:36px;background:var(--card);border:1px solid var(--rule);padding:28px 26px 30px;}
+  .reader h3{
+    font-family:"Gowun Batang",Georgia,serif;font-weight:700;
+    font-size:22px;line-height:1.36;margin:8px 0 14px;
+  }
+  .sec{margin:0 0 20px;}
+  .sec:last-child{margin-bottom:0;}
+  .sec h4{
+    font-size:10.5px;letter-spacing:.14em;font-weight:600;color:var(--ink-faint);
+    margin:0 0 8px;text-transform:uppercase;
+  }
+  .sec p{margin:0;font-size:14px;line-height:1.78;color:var(--ink);}
+  .sec ul{margin:0;padding-left:0;list-style:none;}
+  .sec ul li{
+    font-size:14px;line-height:1.75;color:var(--ink);margin-bottom:9px;padding-left:15px;position:relative;
+  }
+  .sec ul li::before{content:"";position:absolute;left:0;top:10px;width:5px;height:1px;background:var(--ink-faint);}
+  .classroom{border-left:2px solid var(--dawn);padding-left:14px;}
+  .classroom p{font-size:13.5px;color:var(--ink-soft);}
+  .sources a{
+    display:block;font-size:12.5px;color:var(--sky);text-decoration:none;
+    border-bottom:1px solid var(--rule);padding:8px 0;line-height:1.5;
+  }
+  .sources a:hover{color:var(--ink);}
+  .back{display:none;}
+
+  /* ---- states ---- */
+  .empty,.oops{padding:34px 0;font-size:14px;line-height:1.7;color:var(--ink-soft);}
+  .oops{color:var(--ink);}
+  .oops button{
+    display:block;margin-top:12px;font-family:inherit;font-size:12.5px;padding:7px 15px;
+    border:1px solid var(--ink);background:transparent;color:var(--ink);border-radius:999px;cursor:pointer;
+  }
+  .skel{border-top:1px solid var(--rule);padding:18px 4px 18px 20px;}
+  .skel div{height:10px;background:var(--rule);margin-bottom:9px;animation:pulse 1.4s ease-in-out infinite;}
+  .skel div:nth-child(1){width:22%;height:8px;}
+  .skel div:nth-child(2){width:78%;height:13px;}
+  .skel div:nth-child(3){width:56%;}
+  @keyframes pulse{0%,100%{opacity:.45}50%{opacity:.9}}
+
+  .reveal{opacity:0;transform:translateY(7px);animation:rise .5s ease forwards;}
+  @keyframes rise{to{opacity:1;transform:none}}
+
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important;}
+    .reveal{opacity:1;transform:none;}
+    .horizon.on span,.horizon.done span{width:100%;}
+  }
+
+  /* ---- mobile: reader becomes a full sheet ---- */
+  @media (max-width:820px){
+    .panes{grid-template-columns:1fr;gap:0;}
+    .reader{
+      position:fixed;inset:0;z-index:60;overflow-y:auto;border:0;
+      padding:20px 22px 60px;display:none;
+    }
+    body.reading .reader{display:block;}
+    body.reading{overflow:hidden;}
+    .back{
+      display:inline-block;font-family:inherit;font-size:12.5px;color:var(--ink-soft);
+      background:transparent;border:0;padding:6px 0 14px;cursor:pointer;letter-spacing:.02em;
+    }
+    .reader.idle{display:none!important;}
+    .load{margin-left:0;}
+  }
+</style>
+</head>
+<body>
+
+<div class="horizon" id="horizon"><span></span></div>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow" id="dateline">불러오는 중</p>
+    <h1>오늘 아침에<br>알아둘 것들</h1>
+    <p class="standfirst">헤드라인을 누르면 그 이슈만 다시 찾아, 배경과 영향까지 정리해 보여드립니다.</p>
+  </header>
+
+  <div class="controls" id="filters">
+    <button class="chip" data-cat="전체" aria-pressed="true">전체</button>
+    <button class="chip" data-cat="정치" aria-pressed="false">정치</button>
+    <button class="chip" data-cat="경제" aria-pressed="false">경제</button>
+    <button class="chip" data-cat="증시·주식" aria-pressed="false">증시·주식</button>
+    <button class="chip" data-cat="사회" aria-pressed="false">사회</button>
+    <button class="chip" data-cat="IT·테크" aria-pressed="false">IT·테크</button>
+    <button class="chip" data-cat="교육·AI" aria-pressed="false">교육·AI</button>
+    <button class="load" id="load">브리핑 받기</button>
+  </div>
+  <p class="stamp" id="stamp"></p>
+
+  <div class="market pending" id="market"></div>
+
+  <div class="panes">
+    <div id="listPane"></div>
+    <aside class="reader idle" id="reader">
+      <button class="back" id="back">← 목록</button>
+      <div id="readerBody"></div>
+    </aside>
+  </div>
+</div>
+
+<script>
+const CATS = {
+  "정치":   "var(--ink)",
+  "경제":   "var(--sea)",
+  "증시·주식":"var(--rise)",
+  "사회":   "var(--plum)",
+  "IT·테크":"var(--sky)",
+  "교육·AI":"var(--dawn)"
+};
+
+const el = id => document.getElementById(id);
+const listPane = el("listPane"), reader = el("reader"), readerBody = el("readerBody");
+const horizon = el("horizon"), loadBtn = el("load"), stamp = el("stamp");
+
+let issues = [], filter = "전체", activeId = null;
+const detailCache = new Map();
+
+/* ---------- date ---------- */
+const now = new Date();
+const DAYS = ["일","월","화","수","목","금","토"];
+const todayLabel = `${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 ${DAYS[now.getDay()]}요일`;
+el("dateline").textContent = todayLabel;
+
+/* ---------- api ---------- */
+const PASSCODE = new URLSearchParams(location.search).get("k") || "";
+
+async function ask(prompt, kind){
+  const res = await fetch("/api/claude",{
+    method:"POST",
+    headers:{"Content-Type":"application/json","x-app-key":PASSCODE},
+    body:JSON.stringify({prompt, kind: kind || "list"})
+  });
+  const data = await res.json().catch(()=>({error:{message:"서버 응답을 읽지 못했습니다."}}));
+  if(!res.ok || data.error){
+    throw new Error((data.error && data.error.message) || `요청 실패 (${res.status})`);
+  }
+  return (data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n");
+}
+
+function parseJSON(text){
+  let t = text.replace(/```json/gi,"").replace(/```/g,"").trim();
+  const s = t.search(/[\[{]/);
+  if(s === -1) throw new Error("형식을 읽지 못했습니다.");
+  const open = t[s], close = open === "[" ? "]" : "}";
+  const e = t.lastIndexOf(close);
+  return JSON.parse(t.slice(s, e+1));
+}
+
+const NEUTRAL = "정치 사안은 사실과 각 입장을 균형 있게 전달하고, 특정 정당이나 진영을 옹호·비판하지 마세요.";
+
+/* ---------- market snapshot ---------- */
+const market = el("market");
+
+function marketSkeleton(){
+  market.className = "market pending";
+  market.innerHTML = ["코스피","코스닥","원/달러","나스닥","비트코인"].map(n=>
+    `<div class="tick flat"><div class="nm">${n}</div><div class="px">—</div><div class="ch">확인 중</div></div>`).join("");
+}
+
+async function loadMarket(){
+  marketSkeleton();
+  try{
+    const raw = await ask(
+`오늘은 ${todayLabel}입니다. 웹 검색으로 가장 최근 시세를 확인해 아래 5개를 채우세요.
+코스피 지수, 코스닥 지수, 원/달러 환율, 나스닥 종합지수, 비트코인(원화 또는 달러).
+검색으로 확인되지 않은 값은 지어내지 말고 price를 "-"로 두세요.
+
+아래 JSON 배열만 출력하세요. 설명, 코드펜스 없이 배열만.
+[{"name":"코스피","price":"3,120.45","change":"+18.2 (0.59%)","dir":"up|down|flat"}]`, "market"
+    );
+    const rows = parseJSON(raw).slice(0,5);
+    market.className = "market";
+    market.innerHTML = rows.map(r=>`
+      <div class="tick ${["up","down","flat"].includes(r.dir)?r.dir:"flat"}">
+        <div class="nm">${escapeHtml(r.name||"")}</div>
+        <div class="px">${escapeHtml(r.price||"—")}</div>
+        <div class="ch">${escapeHtml(r.change||"")}</div>
+      </div>`).join("");
+  }catch(err){
+    market.className = "market";
+    market.innerHTML = `<div class="tick flat" style="flex-basis:100%"><div class="nm">시세</div>
+      <div class="ch">시세를 불러오지 못했습니다. 브리핑을 새로 받으면 다시 시도합니다.</div></div>`;
+  }
+}
+
+/* ---------- load briefing ---------- */
+async function loadBriefing(){
+  loadBtn.disabled = true;
+  loadBtn.textContent = "찾는 중";
+  horizon.className = "horizon on";
+  activeId = null;
+  reader.classList.add("idle");
+  document.body.classList.remove("reading");
+  readerBody.innerHTML = "";
+  listPane.innerHTML = Array.from({length:5},()=>
+    `<div class="skel"><div></div><div></div><div></div></div>`).join("");
+  loadMarket();
+
+  try{
+    const raw = await ask(
+`오늘은 ${todayLabel}입니다. 웹 검색으로 오늘 대한민국의 주요 뉴스를 찾아 9개 이슈를 고르세요.
+정치·경제·증시/주식·사회·IT/테크·교육(특히 AI 교육) 분야가 고루 들어가게 하되,
+증시·주식은 최소 2개(코스피/코스닥 흐름, 급등락 업종이나 종목, 해외 증시 영향 등), 교육은 최소 1개 포함하세요.
+${NEUTRAL} 특정 종목의 매수·매도를 권하지 말고, 시장에서 일어난 사실만 전하세요.
+
+아래 JSON 배열만 출력하세요. 설명, 머리말, 코드펜스 없이 배열만.
+[{"id":"1","category":"정치|경제|증시·주식|사회|IT·테크|교육·AI","title":"12자 내외 헤드라인","summary":"한 문장 요약","query":"이 이슈를 다시 검색할 때 쓸 한국어 검색어"}]`
+    );
+    const parsed = parseJSON(raw);
+    issues = parsed.filter(i => i && i.title).map((i,n)=>({...i, id:String(i.id ?? n)}));
+    detailCache.clear();
+    stamp.textContent = `${new Date().toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"})} 기준 · ${issues.length}건`;
+    renderList();
+  }catch(err){
+    listPane.innerHTML =
+      `<div class="oops">브리핑을 불러오지 못했습니다.<br><span style="color:var(--ink-soft);font-size:13px">${escapeHtml(err.message)}</span>
+       <button id="retry">다시 시도</button></div>`;
+    el("retry").onclick = loadBriefing;
+    stamp.textContent = "";
+  }finally{
+    horizon.className = "horizon done";
+    loadBtn.disabled = false;
+    loadBtn.textContent = "브리핑 새로 받기";
+  }
+}
+
+/* ---------- list ---------- */
+function renderList(){
+  const shown = issues.filter(i => filter === "전체" || i.category === filter);
+  if(!shown.length){
+    listPane.innerHTML = `<p class="empty">이 분야에는 오늘 고른 이슈가 없습니다. 다른 분야를 눌러보세요.</p>`;
+    return;
+  }
+  listPane.innerHTML = `<ul class="list">` + shown.map((i,n)=>`
+    <li class="reveal" style="animation-delay:${n*45}ms">
+      <button class="item" data-id="${i.id}" style="--dot:${CATS[i.category]||"var(--ink-faint)"}"
+              aria-current="${activeId===i.id}">
+        <div class="kicker">${escapeHtml(i.category||"뉴스")}</div>
+        <h2>${escapeHtml(i.title)}</h2>
+        <p>${escapeHtml(i.summary||"")}</p>
+      </button>
+    </li>`).join("") + `</ul>`;
+  listPane.querySelectorAll(".item").forEach(b=>{
+    b.onclick = ()=>openIssue(b.dataset.id);
+  });
+}
+
+/* ---------- reader ---------- */
+async function openIssue(id){
+  const issue = issues.find(i=>i.id===id);
+  if(!issue) return;
+  activeId = id;
+  renderList();
+  reader.classList.remove("idle");
+  document.body.classList.add("reading");
+  reader.scrollTop = 0;
+
+  if(detailCache.has(id)){ paintDetail(issue, detailCache.get(id)); return; }
+
+  readerBody.innerHTML = `
+    <div class="kicker" style="--dot:${CATS[issue.category]||"var(--ink-faint)"}">${escapeHtml(issue.category||"")}</div>
+    <h3>${escapeHtml(issue.title)}</h3>
+    <div class="skel" style="border:0;padding:0"><div></div><div></div><div></div></div>`;
+  horizon.className = "horizon on";
+
+  try{
+    const raw = await ask(
+`오늘은 ${todayLabel}입니다. 다음 뉴스 이슈를 웹 검색으로 자세히 확인하고 정리하세요.
+제목: ${issue.title}
+요약: ${issue.summary||""}
+검색어 힌트: ${issue.query||issue.title}
+
+읽는 사람은 중학교 미술교사이자 AI융합교육 대학원생입니다. 기사 내용에 없는 사실을 지어내지 마세요.
+${NEUTRAL}
+
+아래 JSON 객체만 출력하세요. 설명, 코드펜스 없이 객체만.
+{"background":"왜 지금 이 일이 벌어졌는지 3~4문장",
+ "points":["핵심 사실 4개, 각 한 문장"],
+ "impact":"앞으로 어디에 영향을 주는지 2~3문장",
+ "classroom":"이 이슈를 교실에서 이야기하거나 수업 소재로 쓴다면 어떤 각도가 좋을지 2문장",
+ "sources":[{"title":"매체명과 기사 제목","url":"https://..."}]}`, "detail"
+    );
+    const detail = parseJSON(raw);
+    detailCache.set(id, detail);
+    if(activeId === id) paintDetail(issue, detail);
+  }catch(err){
+    readerBody.innerHTML = `
+      <div class="kicker">${escapeHtml(issue.category||"")}</div>
+      <h3>${escapeHtml(issue.title)}</h3>
+      <div class="oops">이 기사를 더 읽어오지 못했습니다.<br>
+        <span style="color:var(--ink-soft);font-size:13px">${escapeHtml(err.message)}</span>
+        <button id="retryOne">다시 시도</button></div>`;
+    el("retryOne").onclick = ()=>{ detailCache.delete(id); openIssue(id); };
+  }finally{
+    horizon.className = "horizon done";
+  }
+}
+
+function paintDetail(issue, d){
+  const pts = Array.isArray(d.points) ? d.points : [];
+  const srcs = Array.isArray(d.sources) ? d.sources : [];
+  readerBody.innerHTML = `
+    <div class="kicker" style="--dot:${CATS[issue.category]||"var(--ink-faint)"}">${escapeHtml(issue.category||"")}</div>
+    <h3>${escapeHtml(issue.title)}</h3>
+    ${d.background ? `<div class="sec"><h4>배경</h4><p>${escapeHtml(d.background)}</p></div>`:""}
+    ${pts.length ? `<div class="sec"><h4>핵심</h4><ul>${pts.map(p=>`<li>${escapeHtml(p)}</li>`).join("")}</ul></div>`:""}
+    ${d.impact ? `<div class="sec"><h4>영향</h4><p>${escapeHtml(d.impact)}</p></div>`:""}
+    ${d.classroom ? `<div class="sec classroom"><h4>수업에서라면</h4><p>${escapeHtml(d.classroom)}</p></div>`:""}
+    ${srcs.length ? `<div class="sec sources"><h4>출처</h4>${srcs.map(s=>
+        `<a href="${escapeAttr(s.url||"#")}" target="_blank" rel="noopener">${escapeHtml(s.title||s.url||"기사 열기")}</a>`).join("")}</div>`:""}
+  `;
+}
+
+/* ---------- helpers ---------- */
+function escapeHtml(s){
+  return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function escapeAttr(u){
+  const s = String(u??"");
+  return /^https?:\/\//i.test(s) ? escapeHtml(s) : "#";
+}
+
+/* ---------- wiring ---------- */
+el("filters").addEventListener("click", e=>{
+  const chip = e.target.closest(".chip");
+  if(!chip) return;
+  filter = chip.dataset.cat;
+  el("filters").querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed", String(c===chip)));
+  renderList();
+});
+el("back").onclick = ()=>{
+  document.body.classList.remove("reading");
+  reader.classList.add("idle");
+  activeId = null;
+  renderList();
+};
+loadBtn.onclick = loadBriefing;
+
+listPane.innerHTML = `<p class="empty">아직 오늘 브리핑이 없습니다. 위의 <strong style="font-weight:500">브리핑 받기</strong>를 누르면 지금 뉴스를 찾아옵니다.</p>`;
+loadBriefing();
+</script>
+</body>
+</html>
