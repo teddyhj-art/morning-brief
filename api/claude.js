@@ -7,7 +7,7 @@ export const config = { maxDuration: 60 };
 const MODEL = "gemini-2.5-flash";
 
 // 요청 종류별 출력 상한. 검색 결과를 읽고 정리해야 하므로 넉넉하게 둡니다.
-const BUDGET = { list: 4000, detail: 5000, market: 2500 };
+const BUDGET = { list: 8000, detail: 12000, market: 4000 };
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
