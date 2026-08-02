@@ -48,6 +48,7 @@ export default async function handler(req, res) {
         generationConfig: {
           temperature: 0.2,
           maxOutputTokens: BUDGET[kind] || BUDGET.list,
+          thinkingConfig: { thinkingBudget: 0 },
         },
       }),
     });
