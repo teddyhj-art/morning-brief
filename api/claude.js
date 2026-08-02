@@ -4,7 +4,7 @@
 
 export const config = { maxDuration: 60 };
 
-const MODEL = "gemini-2.5-flash-lite";
+const MODEL = "gemini-2.5-flash";
 
 // 요청 종류별 출력 상한. 검색 결과를 읽고 정리해야 하므로 넉넉하게 둡니다.
 const BUDGET = { list: 8000, detail: 12000, market: 4000 };
